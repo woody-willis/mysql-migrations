@@ -22,22 +22,13 @@ async function execute_query(conn, path, final_file_paths, type, run = true) {
 
     try {
       const queries = await import(current_file_path);
-      console.info(colors.green(`Run: ${run} Type: ${type.toUpperCase()}: ${queries[type]}`));
 
       const timestamp_val = file_name.split("_")[0];
       if (typeof queries[type] === 'string') {
         await run_query(conn, queries[type], run);
         await updateRecords(conn, type, table, timestamp_val);
       } else if (typeof queries[type] === 'function') {
-        console.info(`${type.toUpperCase()} Function: "${queries[type].toString()}"`);
-        await new Promise((resolve, reject) => {
-          queries[type](conn, (err) => {
-            if (err) {
-              return reject(err);
-            }
-            resolve();
-          });
-        });
+        await queries[type](conn);
         await updateRecords(conn, type, table, timestamp_val);
       }
     } catch (error) {
