@@ -32,76 +32,97 @@ export const add_migration = (argv, path, cb) => {
   });
 };
 
-export const up_migrations = (conn, max_count, path, cb) => {
-  queryFunctions.run_query(conn, `SELECT timestamp FROM ${table} ORDER BY timestamp DESC LIMIT 1`, (results) => {
-    const file_paths = [];
-    let max_timestamp = 0;
-    if (results.length) {
-      max_timestamp = results[0].timestamp;
+export const up_migrations = async (conn, max_count, path, cb) => {
+  const results = await queryFunctions.run_query(conn, `SELECT timestamp FROM ${table} ORDER BY timestamp DESC LIMIT 1`);
+  const file_paths = [];
+  let max_timestamp = 0;
+  if (results.length) {
+    max_timestamp = results[0].timestamp;
+  }
+
+  const files = await new Promise((resolve, reject) => {
+    fileFunctions.readFolder(path, (files) => {
+      if (files) {
+        resolve(files);
+      } else {
+        reject(new Error('Could not read folder'));
+      }
+    });
+  });
+
+  files.forEach((file) => {
+    const timestamp_split = file.split("_", 1);
+    if (timestamp_split.length) {
+      const timestamp = parseInt(timestamp_split[0]);
+      if (Number.isInteger(timestamp) && timestamp.toString().length === 13 && timestamp > max_timestamp) {
+        file_paths.push({ timestamp: timestamp, file_path: file });
+      }
+    } else {
+      throw new Error(`Invalid file ${file}`);
     }
-
-    fileFunctions.readFolder(path, (files) => {
-      files.forEach((file) => {
-        const timestamp_split = file.split("_", 1);
-        if (timestamp_split.length) {
-          const timestamp = parseInt(timestamp_split[0]);
-          if (Number.isInteger(timestamp) && timestamp.toString().length === 13 && timestamp > max_timestamp) {
-            file_paths.push({ timestamp: timestamp, file_path: file });
-          }
-        } else {
-          throw new Error(`Invalid file ${file}`);
-        }
-      });
-
-      const final_file_paths = file_paths.sort((a, b) => a.timestamp - b.timestamp).slice(0, max_count);
-      queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb);
-    });
   });
+
+  const final_file_paths = file_paths.sort((a, b) => a.timestamp - b.timestamp).slice(0, max_count);
+  await queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb);
+  cb();
 };
 
-export const up_migrations_all = (conn, max_count, path, cb) => {
-  queryFunctions.run_query(conn, `SELECT timestamp FROM ${table}`, (results) => {
+export const up_migrations_all = async (conn, max_count, path, cb) => {
+  const files = await new Promise((resolve, reject) => {
+    fileFunctions.readFolder(path, (files) => {
+      if (files) {
+        resolve(files);
+      } else {
+        reject(new Error('Could not read folder'));
+      }
+    });
+  });
+
+  const file_paths = [];
+  files.forEach((file) => {
+    const timestamp_split = file.split("_", 1);
+    if (timestamp_split.length) {
+      const timestamp = parseInt(timestamp_split[0]);
+      if (Number.isInteger(timestamp) && timestamp.toString().length === 13) {
+        file_paths.push({ timestamp: timestamp, file_path: file });
+      }
+    } else {
+      throw new Error(`Invalid file ${file}`);
+    }
+  });
+
+  const final_file_paths = file_paths.sort((a, b) => a.timestamp - b.timestamp).slice(0, max_count);
+  await queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb);
+  cb();
+};
+
+export const down_migrations = async (conn, max_count, path, cb) => {
+  const results = await queryFunctions.run_query(conn, `SELECT timestamp FROM ${table} ORDER BY timestamp DESC LIMIT ${max_count}`);
+  if (results.length) {
+    const temp_timestamps = results.map((ele) => ele.timestamp);
     const file_paths = [];
-    const timestamps = results.map(r => parseInt(r.timestamp));
 
-    fileFunctions.readFolder(path, (files) => {
-      files.forEach((file) => {
-        const timestamp_split = file.split("_", 1);
-        if (timestamp_split.length) {
-          const timestamp = parseInt(timestamp_split[0]);
-          if (Number.isInteger(timestamp) && timestamp.toString().length === 13 && !timestamps.includes(timestamp)) {
-            file_paths.push({ timestamp: timestamp, file_path: file });
-          }
-        } else {
-          throw new Error(`Invalid file ${file}`);
-        }
-      });
-
-      const final_file_paths = file_paths.sort((a, b) => a.timestamp - b.timestamp).slice(0, max_count);
-      queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb);
-    });
-  });
-};
-
-export const down_migrations = (conn, max_count, path, cb) => {
-  queryFunctions.run_query(conn, `SELECT timestamp FROM ${table} ORDER BY timestamp DESC LIMIT ${max_count}`, (results) => {
-    if (results.length) {
-      const temp_timestamps = results.map((ele) => ele.timestamp);
-      const file_paths = [];
-
+    const files = await new Promise((resolve, reject) => {
       fileFunctions.readFolder(path, (files) => {
-        files.forEach((file) => {
-          const timestamp = file.split("_", 1)[0];
-          if (temp_timestamps.indexOf(timestamp) > -1) {
-            file_paths.push({ timestamp: timestamp, file_path: file });
-          }
-        });
-
-        const final_file_paths = file_paths.sort((a, b) => b.timestamp - a.timestamp).slice(0, max_count);
-        queryFunctions.execute_query(conn, path, final_file_paths, 'down', cb);
+        if (files) {
+          resolve(files);
+        } else {
+          reject(new Error('Could not read folder'));
+        }
       });
-    }
-  });
+    });
+
+    files.forEach((file) => {
+      const timestamp = file.split("_", 1)[0];
+      if (temp_timestamps.indexOf(timestamp) > -1) {
+        file_paths.push({ timestamp: timestamp, file_path: file });
+      }
+    });
+
+    const final_file_paths = file_paths.sort((a, b) => b.timestamp - a.timestamp).slice(0, max_count);
+    await queryFunctions.execute_query(conn, path, final_file_paths, 'down', cb);
+  }
+  cb();
 };
 
 export const run_migration_directly = async (file, type, conn, path, cb) => {
