@@ -1,11 +1,10 @@
-var chai = require('chai');
+import chai from 'chai';
+import * as queryFunctions from '../query.js';
+import testCommons from './test_commons.js';
+import mysql from './mysql.js';
+import assert from 'assert';
 
-var queryFunctions = require('../query');
-var testCommons = require('./test_commons');
-var mysql = require('./mysql');
-var assert = require('assert');
-
-var should = chai.should();
+const should = chai.should();
 
 describe('query.js', function() {
   before(function (done) {
@@ -13,42 +12,28 @@ describe('query.js', function() {
   });
 
   context('updateRecords', function () {
-    var timestamp = Date.now();
-    var table = 'user1';
-    it('should insert into table when up', function (done) {
-      mysql.getConnection(function (err, connection) {
-        connection.query('CREATE TABLE `'+table+'` (timestamp VARCHAR(255))', function (error, results) {
-          if (error) {
-            throw error;
-          }
+    const timestamp = Date.now();
+    const table = 'user1';
 
-          queryFunctions.updateRecords(mysql, 'up', table, timestamp, function () {
-            connection.query('SELECT * FROM `'+table+'` WHERE timestamp="'+timestamp+'"', function(err, res) {
-              if (err) {
-                throw err;
-              }
+    it('should insert into table when up', async function () {
+      const connection = await mysql.getConnection();
 
-              assert.ok(res.length);
-              done();
-            });
-          });
-        });
-      });
+      await connection.query(`CREATE TABLE IF NOT EXISTS \`${table}\` (timestamp VARCHAR(255))`);
+      await queryFunctions.updateRecords(connection, 'up', table, timestamp);
+
+      const res = await connection.query(`SELECT * FROM \`${table}\` WHERE timestamp="${timestamp}"`);
+
+      assert.ok(res[0].length);
     });
 
-    it('should delete from table when down', function (done) {
-      queryFunctions.updateRecords(mysql, 'down', table, timestamp, function () {
-        mysql.getConnection(function (err, connection) {
-          connection.query('SELECT * FROM `'+table+'` WHERE timestamp="'+timestamp+'"', function(err, res) {
-            if (err) {
-              throw err;
-            }
+    it('should delete from table when down', async function () {
+      const connection = await mysql.getConnection();
+  
+      await queryFunctions.updateRecords(connection, 'down', table, timestamp);
 
-            assert.ok(!res.length);
-            done();
-          });
-        });
-      });
+      const res = await connection.query(`SELECT * FROM \`${table}\` WHERE timestamp="${timestamp}"`);
+
+      assert.ok(!res[0].length);
     });
   });
 });

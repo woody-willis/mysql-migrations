@@ -1,4 +1,2 @@
-module.exports = {
-  'table' : 'mysql_migrations_347ertt3e',
-  'migrations_types' : ['up', 'down']
-};
+export const table = 'migration';
+export const migrations_types = ['up', 'down'];

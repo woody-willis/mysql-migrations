@@ -1,41 +1,44 @@
-var mysql = require('./mysql');
-var fs = require('fs');
+import mysql from './mysql.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-function deleteFolderRecursive(path) {
-  if (fs.existsSync(path)) {
-    fs.readdirSync(path).forEach(function(file,index){
-      var curPath = path + "/" + file;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const deleteFolderRecursive = (directoryPath) => {
+  if (fs.existsSync(directoryPath)) {
+    fs.readdirSync(directoryPath).forEach((file) => {
+      const curPath = path.join(directoryPath, file);
       if (!fs.lstatSync(curPath).isDirectory()) {
         fs.unlinkSync(curPath);
       }
     });
   } else {
-    fs.mkdirSync(path);
+    fs.mkdirSync(directoryPath);
   }
-}
+};
 
-module.exports = function(cb) {
-  mysql.getConnection(function(err, connection) {
-    if (err) {
-      throw err;
+export default async function(cb) {
+  let connection;
+  try {
+    // Using a promise-based connection
+    connection = await mysql.getConnection();
+
+    await connection.query("DROP TABLE IF EXISTS user1");
+    await connection.query("DROP TABLE IF EXISTS user2");
+    await connection.query("DROP TABLE IF EXISTS user3");
+    await connection.query("DROP TABLE IF EXISTS user4");
+    await connection.query("DROP TABLE IF EXISTS user5");
+
+    deleteFolderRecursive(path.join(__dirname, '/migrations'));
+    cb();
+  } catch (error) {
+    console.error(error);
+    throw error;
+  } finally {
+    if (connection) {
+      connection.release();
     }
-
-    connection.query("DROP TABLE IF EXISTS user1", function (error) {
-      if (error) throw error;
-      connection.query("DROP TABLE IF EXISTS user2", function (error) {
-        if (error) throw error;
-        connection.query("DROP TABLE IF EXISTS user3", function (error) {
-          if (error) throw error;
-          connection.query("DROP TABLE IF EXISTS user4", function (error) {
-            if (error) throw error;
-            connection.query("DROP TABLE IF EXISTS user5", function (error) {
-              if (error) throw error;
-              deleteFolderRecursive(__dirname + '/migrations');
-              cb();
-            });
-          });
-        });
-      });
-    });
-  });
+  }
 }

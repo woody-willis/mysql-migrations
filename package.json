@@ -3,6 +3,7 @@
   "version": "1.0.7",
   "description": "A tool to use with mysql package to maintain migrations",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "node node_modules/.bin/mocha test/*"
   },
@@ -28,7 +29,7 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "mocha": "^3.2.0",
-    "mysql": "^2.13.0"
+    "mocha": "^11.7.1",
+    "mysql2": "^3.14.3"
   }
 }

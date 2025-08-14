@@ -1,9 +1,9 @@
-var mysql = require('mysql');
+import mysql from 'mysql2/promise';
 
-module.exports = mysql.createPool({
-  connectionLimit : 10,
+export default mysql.createPool({
+  connectionLimit : 20,
   host     : 'localhost',
   user     : 'root',
-  password : '',
+  password : 'hellosql',
   database : 'test_mig'
 });

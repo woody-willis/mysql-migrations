@@ -1,19 +1,19 @@
-var fs = require("fs");
+import fs from "fs";
 
-function validate_file_name(file_name) {
-  var patt = /^[0-9a-zA-Z-_]+$/;
+export function validate_file_name(file_name) {
+  const patt = /^[0-9a-zA-Z-_]+$/;
   if (!patt.test(file_name)) {
     throw new Error("File name can contain alphabets, numbers, hyphen or underscore");
   }
 }
 
-function readFolder(path, cb) {
-  fs.readdir(path, function (err, files) {
+export function readFolder(path, cb) {
+  fs.readdir(path, (err, files) => {
     if (err) {
       throw err;
     }
 
-    var schemaPath = files.indexOf("schema.sql");
+    const schemaPath = files.indexOf("schema.sql");
     if (schemaPath > -1) {
       files.splice(schemaPath, 1);
     }
@@ -21,8 +21,8 @@ function readFolder(path, cb) {
   });
 }
 
-function readFile(path, cb) {
-  fs.readFile(path, function (err, data) {
+export function readFile(path, cb) {
+  fs.readFile(path, (err, data) => {
     if (err) {
       throw err;
     }
@@ -30,9 +30,3 @@ function readFile(path, cb) {
     cb(data);
   });
 }
-
-module.exports = {
-  validate_file_name: validate_file_name,
-  readFolder: readFolder,
-  readFile: readFile
-};

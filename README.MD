@@ -8,7 +8,7 @@
  - [Executing Migrations](#executing-migrations)
 
 ## Prerequisites
-A node project with [mysql](https://github.com/mysqljs/mysql) used for database.
+A node project with [mysql](https://github.com/mysqljs/mysql) used for database. Forked from original and converted into ESM.
 
 ## Install
 It can be installed using npm.
