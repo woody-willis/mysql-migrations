@@ -98,16 +98,16 @@ function handle(argv, conn, path, cb) {
     } else if (argv[2] == 'refresh') {
       coreFunctions.down_migrations(conn, 999999, path)
         .then(() => {
-          coreFunctions.up_migrations_all(conn, 999999, path)
-            .then(() => {
-              updateSchemaAndEnd(conn, path);
-              cb();
-            })
-          .catch((error) => {
-            console.error("Error during refresh migrations:", error);
-            cb(error);
-          });
-      });
+          return coreFunctions.up_migrations_all(conn, 999999, path);
+        })
+        .then(() => {
+          updateSchemaAndEnd(conn, path);
+          cb();
+        })
+        .catch((error) => {
+          console.error("Error during refresh migrations:", error);
+          cb(error);
+        });
     } else if (argv[2] == 'run' && migrations_types.indexOf(argv[4]) > -1) {
       coreFunctions.run_migration_directly(argv[3], argv[4], conn, path)
         .then(() => {

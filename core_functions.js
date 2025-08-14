@@ -32,7 +32,7 @@ export const add_migration = (argv, path, cb) => {
   });
 };
 
-export const up_migrations = async (conn, max_count, path, cb) => {
+export const up_migrations = async (conn, max_count, path) => {
   const results = await queryFunctions.run_query(conn, `SELECT timestamp FROM ${table} ORDER BY timestamp DESC LIMIT 1`);
   const file_paths = [];
   let max_timestamp = 0;
@@ -63,11 +63,10 @@ export const up_migrations = async (conn, max_count, path, cb) => {
   });
 
   const final_file_paths = file_paths.sort((a, b) => a.timestamp - b.timestamp).slice(0, max_count);
-  await queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb);
-  cb();
+  await queryFunctions.execute_query(conn, path, final_file_paths, 'up');
 };
 
-export const up_migrations_all = async (conn, max_count, path, cb) => {
+export const up_migrations_all = async (conn, max_count, path) => {
   const files = await new Promise((resolve, reject) => {
     fileFunctions.readFolder(path, (files) => {
       if (files) {
@@ -92,11 +91,10 @@ export const up_migrations_all = async (conn, max_count, path, cb) => {
   });
 
   const final_file_paths = file_paths.sort((a, b) => a.timestamp - b.timestamp).slice(0, max_count);
-  await queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb);
-  cb();
+  await queryFunctions.execute_query(conn, path, final_file_paths, 'up');
 };
 
-export const down_migrations = async (conn, max_count, path, cb) => {
+export const down_migrations = async (conn, max_count, path) => {
   const results = await queryFunctions.run_query(conn, `SELECT timestamp FROM ${table} ORDER BY timestamp DESC LIMIT ${max_count}`);
   if (results.length) {
     const temp_timestamps = results.map((ele) => ele.timestamp);
@@ -120,16 +118,15 @@ export const down_migrations = async (conn, max_count, path, cb) => {
     });
 
     const final_file_paths = file_paths.sort((a, b) => b.timestamp - a.timestamp).slice(0, max_count);
-    await queryFunctions.execute_query(conn, path, final_file_paths, 'down', cb);
+    await queryFunctions.execute_query(conn, path, final_file_paths, 'down');
   }
-  cb();
 };
 
-export const run_migration_directly = async (file, type, conn, path, cb) => {
+export const run_migration_directly = async (file, type, conn, path) => {
   const current_file_path = `${path}/${file}`;
   const { default: queryModule } = await import(current_file_path);
   const query = queryModule[type];
-  queryFunctions.run_query(conn, query, cb);
+  return await queryFunctions.run_query(conn, query);
 };
 
 export const update_schema = (conn, path, cb) => {
@@ -206,7 +203,14 @@ export const createFromSchema = (conn, path, cb) => {
           });
 
           const final_file_paths = file_paths.sort((a, b) => a.timestamp - b.timestamp).slice(0, 9999999);
-          queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb, false);
+          queryFunctions.execute_query(conn, path, final_file_paths, 'up', false)
+            .then(() => {
+              cb();
+            })
+            .catch((error) => {
+              console.error(colors.red("Error executing queries from schema:"), error);
+              cb(error);
+            });
         });
       }
     });
