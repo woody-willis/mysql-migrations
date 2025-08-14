@@ -15,7 +15,7 @@ async function run_query(conn, query, run = true) {
   }
 }
 
-async function execute_query(conn, path, final_file_paths, type, cb, run = true) {
+async function execute_query(conn, path, final_file_paths, type, run = true) {
   for (const file_path_info of final_file_paths) {
     const file_name = file_path_info['file_path'];
     const current_file_path = `${path}/${file_name}`;
@@ -46,7 +46,6 @@ async function execute_query(conn, path, final_file_paths, type, cb, run = true)
   }
 
   console.info(colors.blue(`No more ${type.toUpperCase()} migrations to run`));
-  cb();
 }
 
 async function updateRecords(conn, type, table, timestamp_val) {
