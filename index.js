@@ -1,7 +1,7 @@
 import fs from "fs";
-import * as coreFunctions from './core_functions';
-import * as queryFunctions from './query';
-import * as config from './config';
+import * as coreFunctions from './core_functions.js';
+import * as queryFunctions from './query.js';
+import * as config from './config.js';
 
 const table = config['table'];
 const migrations_types = config['migrations_types'];
